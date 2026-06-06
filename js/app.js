@@ -28,6 +28,7 @@ const authReady = firebase.authReady ?? firebase.default?.authReady ?? Promise.r
 const ensureAuthenticated = firebase.ensureAuthenticated ?? firebase.default?.ensureAuthenticated ?? (async () => authReady);
 
 // ─── DOM refs ───
+const $loading   = document.getElementById('loading-page');
 const $landing   = document.getElementById('landing-page');
 const $namePage   = document.getElementById('name-page');
 const $session    = document.getElementById('session-page');
@@ -92,7 +93,7 @@ $inputName.addEventListener('input', updateEnterButton);
 
 // ─── Helpers ───
 function showPage(page) {
-    [$landing, $namePage, $session].forEach(p => p.classList.add('hidden'));
+    [$loading, $landing, $namePage, $session].forEach(p => p.classList.add('hidden'));
     page.classList.remove('hidden');
 }
 
@@ -724,7 +725,10 @@ async function enterSession(sessionId) {
     selectedRole = role;
     currentPid = getParticipantId();
     isSpectator = localStorage.getItem('poker_spectator') === 'true';
-    if (!await ensureAuth()) return;
+    if (!await ensureAuth()) {
+        showPage($landing);
+        return;
+    }
     await joinSession(sessionId, name, role, isSpectator);
     showPage($session);
 
@@ -851,14 +855,14 @@ async function init() {
         } catch (err) {
             handleFirebaseError(err, 'Failed to load session');
         }
+        showPage($landing);
     }
-
-    showPage($landing);
 }
 
 window.addEventListener('hashchange', async () => {
     const hashId = getSessionIdFromHash();
     if (hashId && hashId !== currentSessionId) {
+        showPage($loading);
         try {
             const exists = await sessionExists(hashId);
             if (exists) {

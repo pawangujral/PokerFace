@@ -44,6 +44,15 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <!-- Loading Page -->
+    <div id="loading-page" class="page hidden">
+        <div class="container" style="text-align:center">
+            <h1>&#9824; Planning Poker</h1>
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Joining session&hellip;</p>
+        </div>
+    </div>
+
     <!-- Landing Page -->
     <div id="landing-page" class="page">
         <div class="container">
@@ -60,6 +69,13 @@
             </div>
         </div>
     </div>
+
+    <script>
+    if (location.hash.startsWith('#/session/')) {
+        document.getElementById('landing-page').classList.add('hidden');
+        document.getElementById('loading-page').classList.remove('hidden');
+    }
+    </script>
 
     <!-- Name Entry Page -->
     <div id="name-page" class="page hidden">
