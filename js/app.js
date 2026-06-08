@@ -64,9 +64,13 @@ const $spectatorHeadline = document.getElementById('spectator-headline');
 const $spectatorAvatars = document.getElementById('spectator-avatars');
 const $spectatorRoleStatus = document.getElementById('spectator-role-status');
 const $confetti      = document.getElementById('confetti-canvas');
+const $confirmRevealModal  = document.getElementById('confirm-reveal-modal');
+const $btnConfirmRevealOk  = document.getElementById('btn-confirm-reveal-ok');
+const $btnConfirmRevealCancel = document.getElementById('btn-confirm-reveal-cancel');
 
 let currentSessionId = null;
 let currentPid       = null;
+let currentParticipants = {};
 let unsubscribe      = null;
 let unsubReactions   = null;
 let selectedRole     = '';
@@ -103,6 +107,41 @@ function toast(msg) {
     $t.classList.remove('hidden');
     clearTimeout($t._timer);
     $t._timer = setTimeout(() => $t.classList.add('hidden'), 2500);
+}
+
+function confirmRevealEarly() {
+    return new Promise((resolve) => {
+        $confirmRevealModal.classList.remove('hidden');
+
+        const cleanup = (result) => {
+            $confirmRevealModal.classList.add('hidden');
+            $btnConfirmRevealOk.removeEventListener('click', onOk);
+            $btnConfirmRevealCancel.removeEventListener('click', onCancel);
+            resolve(result);
+        };
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+
+        $btnConfirmRevealOk.addEventListener('click', onOk);
+        $btnConfirmRevealCancel.addEventListener('click', onCancel);
+    });
+}
+
+async function triggerReveal() {
+    if (!currentSessionId || $btnReveal.disabled) return;
+
+    if (!getVoteProgress(currentParticipants).allDone) {
+        const proceed = await confirmRevealEarly();
+        if (!proceed) return;
+    }
+
+    logEvent(analytics, 'votes_revealed');
+    if (!await ensureAuth()) return;
+    try {
+        await revealVotes(currentSessionId);
+    } catch (err) {
+        handleFirebaseError(err, 'Failed to reveal votes');
+    }
 }
 
 function isPermissionDeniedError(err) {
@@ -374,15 +413,20 @@ function computeStats(participants) {
     }
 }
 
-// ─── Spectator progress ───
-const RING_CIRCUMFERENCE = 326.73; // 2 * PI * 52
-
-function updateSpectatorProgress(participants) {
+// ─── Vote progress ───
+function getVoteProgress(participants) {
     const entries = Object.entries(participants || {});
     const voterEntries = entries.filter(([, p]) => !p.spectator);
     const voted = voterEntries.filter(([, p]) => p.vote != null).length;
     const total = voterEntries.length;
-    const allDone = voted === total && total > 0;
+    return { voted, total, allDone: voted === total && total > 0 };
+}
+
+// ─── Spectator progress ───
+const RING_CIRCUMFERENCE = 326.73; // 2 * PI * 52
+
+function updateSpectatorProgress(participants) {
+    const { voted, total, allDone } = getVoteProgress(participants);
 
     // Ring progress
     const pct = total > 0 ? voted / total : 0;
@@ -617,15 +661,7 @@ document.addEventListener('keydown', async (e) => {
 
     if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        if (currentSessionId && !$btnReveal.disabled) {
-            logEvent(analytics, 'votes_revealed');
-            if (!await ensureAuth()) return;
-            try {
-                await revealVotes(currentSessionId);
-            } catch (err) {
-                handleFirebaseError(err, 'Failed to reveal votes');
-            }
-        }
+        await triggerReveal();
     }
     if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
@@ -653,6 +689,8 @@ function onSessionUpdate(data) {
     const participants = data.participants || {};
     const myData = participants[currentPid];
     const myVote = myData?.vote ?? null;
+
+    currentParticipants = participants;
 
     // Update UI elements
     $btnReveal.textContent = status === 'revealed' ? 'Votes Shown' : 'Show Votes';
@@ -801,14 +839,7 @@ $inputName.addEventListener('keydown', (e) => {
 });
 
 $btnReveal.addEventListener('click', async () => {
-    if (!currentSessionId) return;
-    logEvent(analytics, 'votes_revealed');
-    if (!await ensureAuth()) return;
-    try {
-        await revealVotes(currentSessionId);
-    } catch (err) {
-        handleFirebaseError(err, 'Failed to reveal votes');
-    }
+    await triggerReveal();
 });
 
 $btnNewRound.addEventListener('click', async () => {
