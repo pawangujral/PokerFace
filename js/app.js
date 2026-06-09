@@ -635,7 +635,7 @@ function spawnFloatingEmoji(emoji) {
 }
 
 // ─── Keyboard shortcuts ───
-// Map keys to FIBONACCI values: 0-9 map to card indices, r=reveal, n=new round
+// Map keys to FIBONACCI values: 0-9 map to card indices
 const KEY_MAP = {
     '0': 0, '1': 1, '2': 2, '3': 3, '4': 4,
     '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
@@ -659,21 +659,6 @@ document.addEventListener('keydown', async (e) => {
         return;
     }
 
-    if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        await triggerReveal();
-    }
-    if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault();
-        if (currentSessionId) {
-            if (!await ensureAuth()) return;
-            try {
-                await newRound(currentSessionId);
-            } catch (err) {
-                handleFirebaseError(err, 'Failed to start new round');
-            }
-        }
-    }
 });
 
 // ─── Session state callback ───
