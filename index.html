@@ -199,6 +199,18 @@
     <!-- Toast notification -->
     <div id="toast" class="toast hidden"></div>
 
+    <!-- Confirm reveal-before-everyone-voted dialog -->
+    <div id="confirm-reveal-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <p>Not everyone has voted yet.</p>
+            <p class="modal-subtext">Once votes are shown, no one can vote on this round anymore. Show votes anyway?</p>
+            <div class="modal-actions">
+                <button id="btn-confirm-reveal-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="btn-confirm-reveal-ok" class="btn btn-primary">Show Votes</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="site-footer">
         <p>Estimated at 1 point. Took 13. Shipped anyway by <a href="https://pawangujral.dev/" target="_blank" rel="noopener">Pawan Gujral</a></p>
     </footer>
