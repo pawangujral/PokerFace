@@ -481,7 +481,17 @@ function updateSpectatorProgress(participants) {
         const g = groups[role];
         const chip = document.createElement('span');
         chip.className = 'spectator-role-chip' + (g.voted === g.total ? ' complete' : '');
-        chip.innerHTML = `<span class="chip-dot"></span>${role} <span class="chip-count">${g.voted}/${g.total}</span>`;
+
+        const dot = document.createElement('span');
+        dot.className = 'chip-dot';
+        chip.appendChild(dot);
+        chip.appendChild(document.createTextNode(` ${role} `));
+
+        const count = document.createElement('span');
+        count.className = 'chip-count';
+        count.textContent = `${g.voted}/${g.total}`;
+        chip.appendChild(count);
+
         $spectatorRoleStatus.appendChild(chip);
     });
 }
